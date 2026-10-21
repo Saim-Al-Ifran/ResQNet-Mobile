@@ -5,13 +5,20 @@ import 'package:get/get.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../controllers/report_event_controller.dart';
 
-class ReportEventScreen extends StatelessWidget {
+class ReportEventScreen extends StatefulWidget {
   const ReportEventScreen({super.key});
 
   @override
+  State<ReportEventScreen> createState() => _ReportEventScreenState();
+}
+
+class _ReportEventScreenState extends State<ReportEventScreen> {
+  @override
   Widget build(BuildContext context) {
-    final controller = Get.put(ReportEventController());
-    final formKey = GlobalKey<FormState>();
+
+    final ReportEventController controller =
+    Get.put(ReportEventController());
+    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
     return Scaffold(
       backgroundColor: AppTheme.lightBackground,
@@ -178,40 +185,58 @@ class ReportEventScreen extends StatelessWidget {
 
             const SizedBox(height: 28),
 
-            SizedBox(
-              height: 54,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  final formIsValid = formKey.currentState!.validate();
-                  final reportError = controller.validateReport();
+            Obx(
+                  () => SizedBox(
+                height: 54,
+                child: ElevatedButton.icon(
+                  onPressed: controller.isSubmitting.value
+                      ? null
+                      : () {
+                    final formIsValid =
+                    formKey.currentState!.validate();
+                    final reportError = controller.validateReport();
 
-                  if (!formIsValid) return;
+                    if (!formIsValid) return;
 
-                  if (reportError != null) {
-                    Get.snackbar(
-                      'Check your report',
-                      reportError,
-                      snackPosition: SnackPosition.BOTTOM,
-                    );
-                    return;
-                  }
+                    if (reportError != null) {
+                      Get.snackbar(
+                        'Check your report',
+                        reportError,
+                        snackPosition: SnackPosition.BOTTOM,
+                      );
+                      return;
+                    }
 
-                  Get.snackbar(
-                    'Validation successful',
-                    'Your report passed the checks. It has not been sent yet.',
-                    snackPosition: SnackPosition.BOTTOM,
-                  );
-                },
-                icon: const Icon(Icons.send_rounded),
-                label: const Text(
-                  'Submit Report',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryRed,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    try {
+                      final report = controller.buildReportModel();
+
+                      debugPrint('Report model created: ${report.eventType}');
+                      debugPrint('Location: ${report.latitude}, ${report.longitude}');
+
+                      Get.snackbar(
+                        'Validation successful',
+                        'Report data prepared. It has not been saved or sent.',
+                        snackPosition: SnackPosition.BOTTOM,
+                      );
+                    } catch (e) {
+                      Get.snackbar(
+                        'Unable to prepare report',
+                        'Please detect your location and try again.',
+                        snackPosition: SnackPosition.BOTTOM,
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.send_rounded),
+                  label: const Text(
+                    'Submit Report',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryRed,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                 ),
               ),

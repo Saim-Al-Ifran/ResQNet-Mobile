@@ -3,6 +3,8 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 
+import '../../data/models/disaster_event_model.dart';
+
 /// GetX controller managing state and validation for reporting disaster events.
 class ReportEventController extends GetxController {
   final selectedEventType = RxnString();
@@ -151,5 +153,20 @@ class ReportEventController extends GetxController {
     latitudeController.dispose();
     longitudeController.dispose();
     super.onClose();
+  }
+
+  DisasterEventModel buildReportModel() {
+    final position = currentPosition.value;
+
+    if (position == null) {
+      throw StateError('Location has not been detected.');
+    }
+
+    return DisasterEventModel(
+      eventType: selectedEventType.value!,
+      latitude: position.latitude,
+      longitude: position.longitude,
+      description: descriptionController.text.trim(),
+    );
   }
 }
