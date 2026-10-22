@@ -3,9 +3,10 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/database/app_database.dart';
 import '../../data/models/disaster_event_model.dart';
 
-/// GetX controller managing state and validation for reporting disaster events.
+/// GetX controller managing state, location, validation, and local persistence for disaster events.
 class ReportEventController extends GetxController {
   final selectedEventType = RxnString();
   final descriptionController = TextEditingController();
@@ -147,14 +148,6 @@ class ReportEventController extends GetxController {
     }
   }
 
-  @override
-  void onClose() {
-    descriptionController.dispose();
-    latitudeController.dispose();
-    longitudeController.dispose();
-    super.onClose();
-  }
-
   DisasterEventModel buildReportModel() {
     final position = currentPosition.value;
 
@@ -168,5 +161,27 @@ class ReportEventController extends GetxController {
       longitude: position.longitude,
       description: descriptionController.text.trim(),
     );
+  }
+
+  /// Saves the disaster report into the local SQLite database
+  Future<String> saveReportLocally() async {
+    final report = buildReportModel();
+
+    final localId = await AppDatabase.saveDisasterEvent(
+      eventType: report.eventType,
+      latitude: report.latitude,
+      longitude: report.longitude,
+      description: report.description,
+    );
+
+    return localId;
+  }
+
+  @override
+  void onClose() {
+    descriptionController.dispose();
+    latitudeController.dispose();
+    longitudeController.dispose();
+    super.onClose();
   }
 }

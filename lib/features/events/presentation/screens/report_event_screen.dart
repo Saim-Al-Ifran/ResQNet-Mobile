@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -15,9 +14,8 @@ class ReportEventScreen extends StatefulWidget {
 class _ReportEventScreenState extends State<ReportEventScreen> {
   @override
   Widget build(BuildContext context) {
-
     final ReportEventController controller =
-    Get.put(ReportEventController());
+        Get.put(ReportEventController());
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
     return Scaffold(
@@ -51,7 +49,7 @@ class _ReportEventScreenState extends State<ReportEventScreen> {
             const SizedBox(height: 8),
 
             Obx(
-                  () => DropdownButtonFormField<String>(
+              () => DropdownButtonFormField<String>(
                 initialValue: controller.selectedEventType.value,
                 decoration: _decoration('Select disaster type'),
                 items: controller.eventTypes.map((type) {
@@ -60,14 +58,12 @@ class _ReportEventScreenState extends State<ReportEventScreen> {
                     child: Text(type),
                   );
                 }).toList(),
-
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please select a disaster type.';
-                      }
-                      return null;
-                    },
-
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please select a disaster type.';
+                  }
+                  return null;
+                },
                 onChanged: (value) {
                   controller.selectedEventType.value = value;
                 },
@@ -142,19 +138,18 @@ class _ReportEventScreenState extends State<ReportEventScreen> {
                         controller.isGettingAddress.value
                             ? 'Finding your address...'
                             : controller.currentAddress.value ??
-                            'Address unavailable',
+                                'Address unavailable',
                       ),
                       const SizedBox(height: 6),
                       Text(
                         'GPS: ${position.latitude.toStringAsFixed(5)}, '
-                            '${position.longitude.toStringAsFixed(5)}',
+                        '${position.longitude.toStringAsFixed(5)}',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ] else
                       Text(error ?? 'Detect your current location to continue.'),
 
-
-                    const SizedBox(height:12),
+                    const SizedBox(height: 12),
 
                     SizedBox(
                       width: double.infinity,
@@ -164,17 +159,17 @@ class _ReportEventScreenState extends State<ReportEventScreen> {
                             : controller.detectCurrentLocation,
                         icon: isLoading
                             ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
                             : const Icon(Icons.my_location),
                         label: Text(
                           isLoading
                               ? 'Detecting location...'
                               : position == null
-                              ? 'Detect My Location'
-                              : 'Refresh Location',
+                                  ? 'Detect My Location'
+                                  : 'Refresh Location',
                         ),
                       ),
                     ),
@@ -186,50 +181,63 @@ class _ReportEventScreenState extends State<ReportEventScreen> {
             const SizedBox(height: 28),
 
             Obx(
-                  () => SizedBox(
+              () => SizedBox(
                 height: 54,
                 child: ElevatedButton.icon(
                   onPressed: controller.isSubmitting.value
                       ? null
-                      : () {
-                    final formIsValid =
-                    formKey.currentState!.validate();
-                    final reportError = controller.validateReport();
+                      : () async {
+                          final formIsValid =
+                              formKey.currentState!.validate();
+                          final reportError = controller.validateReport();
 
-                    if (!formIsValid) return;
+                          if (!formIsValid) return;
 
-                    if (reportError != null) {
-                      Get.snackbar(
-                        'Check your report',
-                        reportError,
-                        snackPosition: SnackPosition.BOTTOM,
-                      );
-                      return;
-                    }
+                          if (reportError != null) {
+                            Get.snackbar(
+                              'Check your report',
+                              reportError,
+                              snackPosition: SnackPosition.BOTTOM,
+                            );
+                            return;
+                          }
 
-                    try {
-                      final report = controller.buildReportModel();
+                          try {
+                            controller.isSubmitting.value = true;
 
-                      debugPrint('Report model created: ${report.eventType}');
-                      debugPrint('Location: ${report.latitude}, ${report.longitude}');
+                            final localId =
+                                await controller.saveReportLocally();
 
-                      Get.snackbar(
-                        'Validation successful',
-                        'Report data prepared. It has not been saved or sent.',
-                        snackPosition: SnackPosition.BOTTOM,
-                      );
-                    } catch (e) {
-                      Get.snackbar(
-                        'Unable to prepare report',
-                        'Please detect your location and try again.',
-                        snackPosition: SnackPosition.BOTTOM,
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.send_rounded),
-                  label: const Text(
-                    'Submit Report',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                            Get.snackbar(
+                              'Saved Offline',
+                              'Report saved on this device. ID: $localId',
+                              snackPosition: SnackPosition.BOTTOM,
+                            );
+                          } catch (e) {
+                            Get.snackbar(
+                              'Save Failed',
+                              'Could not save the report locally. Please try again.',
+                              snackPosition: SnackPosition.BOTTOM,
+                            );
+                          } finally {
+                            controller.isSubmitting.value = false;
+                          }
+                        },
+                  icon: controller.isSubmitting.value
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.send_rounded),
+                  label: Text(
+                    controller.isSubmitting.value
+                        ? 'Saving Report...'
+                        : 'Submit Report',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryRed,
