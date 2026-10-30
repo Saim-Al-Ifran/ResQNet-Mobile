@@ -178,6 +178,81 @@ class _ReportEventScreenState extends State<ReportEventScreen> {
               );
             }),
 
+            const SizedBox(height: 20),
+
+            Obx(() {
+              final pendingCount = controller.savedReportCount.value;
+              final isSyncing = controller.isSyncing.value;
+              final message = controller.syncMessage.value;
+
+              if (pendingCount == 0 && message.isEmpty) {
+                return const SizedBox.shrink();
+              }
+
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.amber.shade300,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.sync_rounded,
+                          color: Colors.amber.shade900,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          'Report Synchronization ($pendingCount Pending)',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.amber.shade900,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (message.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        message,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.amber.shade900,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: isSyncing
+                            ? null
+                            : controller.retryPendingSync,
+                        icon: isSyncing
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.refresh_rounded),
+                        label: Text(
+                          isSyncing ? 'Syncing...' : 'Retry Pending Sync',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+
             const SizedBox(height: 28),
 
             Obx(
@@ -207,6 +282,10 @@ class _ReportEventScreenState extends State<ReportEventScreen> {
 
                             final localId =
                                 await controller.saveReportLocally();
+
+                            debugPrint('LOCAL SAVE SUCCESS: $localId');
+
+                            await controller.testSavedReports();
 
                             Get.snackbar(
                               'Saved Offline',

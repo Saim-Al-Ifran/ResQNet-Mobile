@@ -3,16 +3,8 @@ import '../../../../app/theme/app_theme.dart';
 import '../../../../app/widgets/resqnet_logo.dart';
 
 /// Home Dashboard UI Screen for ResQNet.
-/// Located in the presentation layer of the feature-first architecture (`lib/features/home/presentation/screens/`).
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -49,26 +41,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
             },
-            icon: Stack(
-              children: [
-                const Icon(
-                  Icons.notifications_none_rounded,
-                  color: Color(0xFF334155),
-                  size: 26,
-                ),
-                Positioned(
-                  right: 2,
-                  top: 2,
-                  child: Container(
-                    width: 9,
-                    height: 9,
-                    decoration: const BoxDecoration(
-                      color: AppTheme.primaryRed,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ],
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              color: Color(0xFF334155),
+              size: 26,
             ),
           ),
           const SizedBox(width: 8),
@@ -77,26 +53,19 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Welcome Header & Safety Message
               _buildWelcomeHeader(),
-
               const SizedBox(height: 20),
-
-              // Prominent Red SOS Emergency Button
-              _buildSosButton(),
-
+              _buildSosButton(context),
               const SizedBox(height: 24),
-
-              // Map Preview Placeholder Card
               _buildMapPreviewCard(),
-
               const SizedBox(height: 24),
-
-              // Overview Section Title
               const Text(
                 'Emergency Overview',
                 style: TextStyle(
@@ -106,10 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   letterSpacing: -0.2,
                 ),
               ),
-
               const SizedBox(height: 12),
-
-              // Summary Cards (Active Events & Nearby Hospitals)
               Row(
                 children: [
                   Expanded(
@@ -117,7 +83,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: 'Active Events',
                       subtitle: '3 Alerts Nearby',
                       icon: Icons.warning_amber_rounded,
-                      iconBgColor: AppTheme.primaryRed.withValues(alpha: 0.12),
+                      iconBgColor:
+                          AppTheme.primaryRed.withValues(alpha: 0.12),
                       iconColor: AppTheme.primaryRed,
                     ),
                   ),
@@ -127,66 +94,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: 'Nearby Hospitals',
                       subtitle: '5 Rescue Units',
                       icon: Icons.local_hospital_rounded,
-                      iconBgColor: const Color(0xFF0288D1).withValues(alpha: 0.12),
+                      iconBgColor:
+                          const Color(0xFF0288D1).withValues(alpha: 0.12),
                       iconColor: const Color(0xFF0288D1),
                     ),
                   ),
                 ],
               ),
-
               const SizedBox(height: 20),
             ],
           ),
-        ),
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: AppTheme.primaryRed,
-          unselectedItemColor: const Color(0xFF64748B),
-          selectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 12,
-          ),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_rounded),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view_rounded),
-              label: 'Events',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.history_rounded),
-              label: 'History',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline_rounded),
-              label: 'Profile',
-            ),
-          ],
         ),
       ),
     );
@@ -235,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// Prominent Red SOS Emergency Button
-  Widget _buildSosButton() {
+  Widget _buildSosButton(BuildContext context) {
     return Container(
       width: double.infinity,
       height: 60,

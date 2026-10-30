@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
@@ -79,5 +80,52 @@ class AppDatabase {
     );
 
     return localId;
+  }
+
+  static Future<List<Map<String, Object?>>> getSavedDisasterEvents() async {
+    final db = await database;
+
+    return await db.query(
+      'disaster_events',
+      orderBy: 'local_created_at DESC',
+    );
+  }
+
+  static Future<List<Map<String, Object?>>> getPendingDisasterEvents() async {
+    final db = await database;
+
+    return await db.query(
+      'disaster_events',
+      where: 'sync_status = ?',
+      whereArgs: ['PENDING'],
+      orderBy: 'local_created_at ASC',
+    );
+  }
+
+  static Future<int> markDisasterEventAsSynced(
+    String localId,
+  ) async {
+    final db = await database;
+
+    return await db.update(
+      'disaster_events',
+      {'sync_status': 'SYNCED'},
+      where: 'local_id = ?',
+      whereArgs: [localId],
+    );
+  }
+
+  static Future<void> debugSavedDisasterEvents() async {
+    final events = await getSavedDisasterEvents();
+
+    // ignore: avoid_print
+    print('Total saved reports: ${events.length}');
+
+    for (final event in events) {
+      // ignore: avoid_print
+      print('Saved report: $event');
+    }
+
+    debugPrint('Total saved reports: ${events.length}');
   }
 }

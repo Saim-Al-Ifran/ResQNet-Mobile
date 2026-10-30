@@ -40,10 +40,15 @@ class WelcomeScreen extends StatelessWidget {
             loadingBuilder: (context, child, loadingProgress) {
               if (loadingProgress == null) return child;
               return Container(
-                color: const Color(0xFF0F172A),
-                child: const Center(
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFF1E293B),
+                      Color(0xFF0F172A),
+                      Color(0xFF334155),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                   ),
                 ),
               );

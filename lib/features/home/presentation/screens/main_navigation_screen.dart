@@ -1,39 +1,29 @@
-
 import 'package:flutter/material.dart';
-
 import '../../../../app/theme/app_theme.dart';
 import '../../../events/presentation/screens/events_feed_screen.dart';
+import '../../../events/presentation/screens/my_reports_screen.dart';
 import '../../../events/presentation/screens/report_event_screen.dart';
+import 'home_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
-
   const MainNavigationScreen({super.key});
 
   @override
-  State<MainNavigationScreen> createState() =>
-      _MainNavigationScreenState();
+  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _selectedIndex = 1;
+  int _selectedIndex = 0;
 
   final List<Widget> _screens = const [
-    _PlaceholderScreen(
-      icon: Icons.map_outlined,
-      title: 'Disaster Map',
-      message: 'Live disaster map will be added here.',
-    ),
+    HomeScreen(),
     EventsFeedScreen(),
     ReportEventScreen(),
-    _PlaceholderScreen(
-      icon: Icons.local_hospital_outlined,
-      title: 'Nearby Hospitals',
-      message: 'Nearby hospitals will appear here.',
-    ),
+    MyReportsScreen(),
     _PlaceholderScreen(
       icon: Icons.person_outline_rounded,
       title: 'Your Profile',
-      message: 'Profile and event history will be added here.',
+      message: 'Profile and settings will be added here.',
     ),
   ];
 
@@ -51,28 +41,28 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             _selectedIndex = index;
           });
         },
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map_rounded),
-            label: 'Map',
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home_rounded),
+            label: 'Home',
           ),
-          const NavigationDestination(
+          NavigationDestination(
             icon: Icon(Icons.dynamic_feed_outlined),
             selectedIcon: Icon(Icons.dynamic_feed_rounded),
             label: 'Events',
           ),
           NavigationDestination(
-            icon: const Icon(Icons.add_location_alt_outlined),
-            selectedIcon: const Icon(Icons.add_location_alt_rounded),
+            icon: Icon(Icons.add_location_alt_outlined),
+            selectedIcon: Icon(Icons.add_location_alt_rounded),
             label: 'Report',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.local_hospital_outlined),
-            selectedIcon: Icon(Icons.local_hospital_rounded),
-            label: 'Hospitals',
+          NavigationDestination(
+            icon: Icon(Icons.assignment_outlined),
+            selectedIcon: Icon(Icons.assignment_rounded),
+            label: 'My Reports',
           ),
-          const NavigationDestination(
+          NavigationDestination(
             icon: Icon(Icons.person_outline_rounded),
             selectedIcon: Icon(Icons.person_rounded),
             label: 'Profile',

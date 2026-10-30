@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -5,9 +6,12 @@ import 'package:get/get.dart';
 
 import '../../../../core/database/app_database.dart';
 import '../../data/models/disaster_event_model.dart';
+import '../../data/repositories/event_repository.dart';
 
 /// GetX controller managing state, location, validation, and local persistence for disaster events.
 class ReportEventController extends GetxController {
+  final EventRepository _eventRepository = EventRepository();
+
   final selectedEventType = RxnString();
   final descriptionController = TextEditingController();
   final latitudeController = TextEditingController();
@@ -20,6 +24,9 @@ class ReportEventController extends GetxController {
 
   final currentAddress = RxnString();
   final isGettingAddress = false.obs;
+  final savedReportCount = 0.obs;
+  final isSyncing = false.obs;
+  final syncMessage = ''.obs;
 
   final eventTypes = const [
     'FLOOD',
@@ -56,16 +63,27 @@ class ReportEventController extends GetxController {
   }
 
   Future<void> getAddressFromCoordinates(
-    double latitude,
-    double longitude,
-  ) async {
+      double latitude,
+      double longitude,
+      ) async {
     isGettingAddress.value = true;
     currentAddress.value = null;
 
+    final fallbackAddress =
+        'Location (${latitude.toStringAsFixed(4)}, '
+        '${longitude.toStringAsFixed(4)})';
+
     try {
+      if (kIsWeb) {
+        currentAddress.value = fallbackAddress;
+        return;
+      }
+
       final placemarks = await Geocoding().placemarkFromCoordinates(
         latitude,
         longitude,
+      ).timeout(
+        const Duration(seconds: 8),
       );
 
       if (placemarks.isNotEmpty) {
@@ -86,32 +104,37 @@ class ReportEventController extends GetxController {
             .toList();
 
         currentAddress.value =
-            parts.isEmpty ? 'Address unavailable' : parts.join(', ');
+        parts.isEmpty ? fallbackAddress : parts.join(', ');
       } else {
-        currentAddress.value = 'Address unavailable';
+        currentAddress.value = fallbackAddress;
       }
-    } catch (_) {
-      currentAddress.value = 'Could not retrieve address';
+    } catch (e) {
+      debugPrint('Address lookup failed: $e');
+      currentAddress.value = fallbackAddress;
     } finally {
       isGettingAddress.value = false;
     }
   }
 
   Future<void> detectCurrentLocation() async {
+    if (isGettingLocation.value) return;
+
     isGettingLocation.value = true;
     locationError.value = null;
 
     try {
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      final serviceEnabled =
+      await Geolocator.isLocationServiceEnabled();
 
       if (!serviceEnabled) {
         await Geolocator.openLocationSettings();
 
         final enabledAfterSettings =
-            await Geolocator.isLocationServiceEnabled();
+        await Geolocator.isLocationServiceEnabled();
 
         if (!enabledAfterSettings) {
-          locationError.value = 'Please turn on your device location.';
+          locationError.value =
+          'Please turn on your device location.';
           return;
         }
       }
@@ -129,20 +152,37 @@ class ReportEventController extends GetxController {
 
       if (permission == LocationPermission.deniedForever) {
         locationError.value =
-            'Enable location permission from app settings.';
+        'Enable location permission from app settings.';
         return;
       }
 
-      final position = await Geolocator.getCurrentPosition();
+      // GPS coordinates: maximum 15 seconds.
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
 
+      // Save coordinates immediately.
       currentPosition.value = position;
+
+      latitudeController.text = position.latitude.toString();
+      longitudeController.text = position.longitude.toString();
+
+      // GPS loading ends here.
+      isGettingLocation.value = false;
+
+      // Address lookup runs separately.
       await getAddressFromCoordinates(
         position.latitude,
         position.longitude,
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Location detection failed: $e');
+
       locationError.value =
-          'Could not detect location. Please try again.';
+      'Could not detect location. Please try again.';
     } finally {
       isGettingLocation.value = false;
     }
@@ -163,18 +203,70 @@ class ReportEventController extends GetxController {
     );
   }
 
+  @override
+  void onInit() {
+    super.onInit();
+    refreshSavedReportCount();
+  }
+
   /// Saves the disaster report into the local SQLite database
   Future<String> saveReportLocally() async {
     final report = buildReportModel();
 
-    final localId = await AppDatabase.saveDisasterEvent(
-      eventType: report.eventType,
-      latitude: report.latitude,
-      longitude: report.longitude,
-      description: report.description,
-    );
+    final localId = await _eventRepository.saveReportLocally(report);
+
+    await refreshSavedReportCount();
 
     return localId;
+  }
+
+  Future<int> getSavedReportCount() async {
+    final reports = await _eventRepository.getSavedReports();
+    return reports.length;
+  }
+
+  Future<void> refreshSavedReportCount() async {
+    savedReportCount.value = await getSavedReportCount();
+  }
+
+  Future<void> retryPendingSync() async {
+    if (isSyncing.value) return;
+
+    isSyncing.value = true;
+    syncMessage.value = 'Syncing pending reports...';
+
+    try {
+      final result = await _eventRepository.syncPendingReports();
+
+      await refreshSavedReportCount();
+
+      final synced = result['synced'] ?? 0;
+      final failed = result['failed'] ?? 0;
+
+      if (failed == 0) {
+        syncMessage.value = '$synced report(s) synced successfully.';
+      } else {
+        syncMessage.value =
+            '$synced synced, $failed failed. Try again later.';
+      }
+    } catch (e) {
+      syncMessage.value = 'Sync failed. Please try again.';
+      // ignore: avoid_print
+      print('Manual sync error: $e');
+    } finally {
+      isSyncing.value = false;
+    }
+  }
+
+  /// Runs debug test to fetch and print saved reports
+  Future<void> testSavedReports() async {
+    // ignore: avoid_print
+    print('----------------------------------------');
+    // ignore: avoid_print
+    print('Executing testSavedReports()...');
+    await AppDatabase.debugSavedDisasterEvents();
+    // ignore: avoid_print
+    print('----------------------------------------');
   }
 
   @override
@@ -185,3 +277,5 @@ class ReportEventController extends GetxController {
     super.onClose();
   }
 }
+
+
